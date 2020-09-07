@@ -120,6 +120,9 @@ def trade_sampler(data, lookback):
             i += 1
 
             while True:
+                if i > len(data) - 1:
+                    break
+
                 candles.append(data[i])
                 stop_levels.append(stop_level)
 
@@ -170,11 +173,11 @@ def trade_sampler(data, lookback):
 
 @click.command()
 @click.option('--with_plots', is_flag=True)
-@click.option('--data_path', type=str, default='data/binance_spot_eth_usdt_5min.json')
-@click.option('--stop_coeff_initial', type=str, default=0.985)
-@click.option('--stop_coeff', type=str, default=0.99)
-@click.option('--target_coeff', type=str, default=1.15)
-@click.option('--terminal_num_periods', type=str, default=20)
+@click.option('--data_path', type=str, default='data/binance_spot_eth_usdt_1min.json')
+@click.option('--stop_coeff_initial', type=float, default=0.985)
+@click.option('--stop_coeff', type=float, default=0.99)
+@click.option('--target_coeff', type=float, default=1.15)
+@click.option('--terminal_num_periods', type=int, default=20)
 @click.option('--lookback', type=int, default=60)
 def main(with_plots, data_path, stop_coeff_initial, stop_coeff, target_coeff, terminal_num_periods, lookback):
     run_dir = 'runs/trailstop_{}'.format(time.time_ns() // 1000)
@@ -195,7 +198,7 @@ def main(with_plots, data_path, stop_coeff_initial, stop_coeff, target_coeff, te
     num_pos_trades = 0
     num_neg_trades = 0
 
-    for i, trade_stats in enumerate(trade_sampler(data, lookback=60)):
+    for i, trade_stats in enumerate(trade_sampler(data, lookback=lookback)):
         backtest_stats.append({
             'trade': i,
             'price_enter': trade_stats['price_enter'],
