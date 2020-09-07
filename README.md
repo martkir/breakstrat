@@ -63,3 +63,43 @@ Example of the type of plot produced:
 *Figure 2*
 ![](runs/trailstop_1599403704228716/plots/pos/0/plot.png)
 
+## Research
+
+### Probability of a true breakout
+
+**Baseline probability**
+
+| run_dir                         | data_path                            |   num_trades |   num_pos_trades |   num_neg_trades |   prob_true |
+|:--------------------------------|:-------------------------------------|-------------:|-----------------:|-----------------:|------------:|
+| runs/trailstop_1599403704228716 | data/binance_spot_eth_usdt_5min.json |          357 |              172 |              185 |    0.481793 |
+| runs/trailstop_1599480765138089 | data/binance_spot_eth_usdt_1min.json |         1747 |              854 |              893 |    0.488838 |
+
+The above table is saved in `research/results/baseline.md`. To produce this table run the following command:
+
+```
+python -m research.baseline --run_ids "[1599403704228716, 1599480765138089]"
+```
+
+Remarks:
+
+- **The estimate of the probability of a true breakout is biased**. The estimate rests on the assumption that a true
+breakout corresponds to a profitable trade (defined by *Trailstop*). However, there are a lot of examples of profitable
+trades that intuitively we wouldn't want to classify as being true breakouts (see figure *). Despite this issue, the
+current working definition does still provide a rough idea of the probability of a true breakout. More importantly,
+**the definition is likely good enough to test whether certain features are predictive for a true breakout**.
+
+**Volume as a feature**
+
+In this section we investigate whether volume correlates with the probability of a breakout. *I.e. are certain values of
+volume more likely to correspond to a true breakout than others?* The belief that we test is that a breakout on larger
+volume is more likely to be a true breakout.
+
+### Profitability of a true breakout
+
+**Baseline profitability**
+
+
+**Volume as a feature**
+
+
+
