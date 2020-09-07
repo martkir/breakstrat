@@ -94,6 +94,42 @@ In this section we investigate whether volume correlates with the probability of
 volume more likely to correspond to a true breakout than others?* The belief that we test is that a breakout on larger
 volume is more likely to be a true breakout.
 
+The results below are generating using the `python -m research.volume` command.
+
+*Table 1*
+
+| interval                 |   prob_true |   num_obs |
+|:-------------------------|------------:|----------:|
+| [33.46566, 335.43794]    |    0.491429 |       175 |
+| [335.70169, 490.34579]   |    0.48     |       175 |
+| [492.50678, 644.01946]   |    0.56     |       175 |
+| [647.25991, 844.23584]   |    0.537143 |       175 |
+| [844.36914, 1096.25991]  |    0.417143 |       175 |
+| [1097.14934, 1437.49539] |    0.434286 |       175 |
+| [1437.86022, 1907.82204] |    0.445714 |       175 |
+| [1918.86553, 2880.75598] |    0.534483 |       174 |
+| [2882.14951, 4722.58386] |    0.482759 |       174 |
+| [4790.58909, 31713.3321] |    0.505747 |       174 |
+
+The above table looks at the probability of a true breakout at different levels of volume. E.g. the first row shows
+the (estimated) probability of a true breakout when the volume (at the time of breakout) is between is between 33.56566 
+and 335.43794. The *num_obs* column displays the number of observations that went into estimating the probability.
+
+*Figure 3*
+![](research/results/volume_eth_usdt_1min/prob_plot.png)
+
+This figure shows the same information as the above table. The values on the x-axis correspond to the row numbers of
+the table; the y-axis to the probability of a true breakout.
+
+*Figure 4*
+![](research/results/volume_eth_usdt_1min/hist.png)
+
+The above figure is a histogram of the volume at breakout time for all trades. The red histogram corresponds to 
+breakouts that were false (i.e. unprofitable). The blue histogram corresponds to true breakouts.
+
+The results on `data/binance_spot_eth_usdt_5min` are similar. To view those results simply go into the
+`research/results/volume_eth_usdt_5min` directory.
+
 ### Profitability of a true breakout
 
 **Baseline profitability**
