@@ -1,5 +1,29 @@
 # breakstrat
 
+## Getting started
+
+To get started with running the code in this repository you need to install the dependencies listed in 
+`requirements.txt`. Doint this is simply a matter of running the following command:
+
+```pip install -r requirements.txt```
+
+The above command should be enough to get code working. However, it is also recommended you use a conda environment.
+Install conda from:
+
+https://docs.anaconda.com/anaconda/install/
+
+Then open a terminal and run:
+
+```
+conda create --name breakstrat
+conda activate breakstrat
+conda install pip
+pip install -r requirements.txt
+```
+
+Make sure that your project interpreted points to the conda environment (e.g. *breakstrat*) you have created for this
+repository.
+
 ## Strategies
 
 ### Baseline
@@ -136,6 +160,4 @@ The results on `data/binance_spot_eth_usdt_5min` are similar. To view those resu
 
 
 **Volume as a feature**
-
-
 
