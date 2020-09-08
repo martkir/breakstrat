@@ -3,7 +3,7 @@
 ## Getting started
 
 To get started with running the code in this repository you need to install the dependencies listed in 
-`requirements.txt`. Doint this is simply a matter of running the following command:
+`requirements.txt`. Doing this is simply a matter of running the following command:
 
 ```pip install -r requirements.txt```
 
