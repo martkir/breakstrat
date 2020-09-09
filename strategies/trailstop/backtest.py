@@ -10,13 +10,13 @@ import pandas as pd
 plt.rcParams["figure.figsize"] = (16, 8)
 
 
-def is_breakout(hits):
+def is_breakout(hits, lb):
     prices = [hit['price_close'] for hit in hits]  # hits[0] is oldest.
     prices = np.array(prices)
     returns = prices[1:] / prices[:len(prices) - 1]
     max_abs_past_return = np.max(np.abs(returns[:len(returns) - 1] - 1))
     last_return = returns[-1] - 1
-    if last_return / max_abs_past_return > 1.005:
+    if last_return / max_abs_past_return > lb:
         return True
     else:
         return False
@@ -91,7 +91,7 @@ def load_data(data_path):
     return data
 
 
-def trade_sampler(data, lookback):
+def trade_sampler(data, lb, lookback):
     stop_coeff_initial = 0.985
     stop_coeff = 0.99
     target_coeff = 1.05 * 4
@@ -103,7 +103,7 @@ def trade_sampler(data, lookback):
             break
         segment = data[i - lookback: i + 1]
 
-        if is_breakout(segment):
+        if is_breakout(segment, lb):
             stop_levels = [None] * len(segment)
             candles = segment
 
@@ -174,15 +174,17 @@ def trade_sampler(data, lookback):
 @click.command()
 @click.option('--with_plots', is_flag=True)
 @click.option('--data_path', type=str, default='data/binance_spot_eth_usdt_1min.json')
+@click.option('--lb', type=float, default=1.0)
 @click.option('--stop_coeff_initial', type=float, default=0.985)
 @click.option('--stop_coeff', type=float, default=0.99)
 @click.option('--target_coeff', type=float, default=1.15)
 @click.option('--terminal_num_periods', type=int, default=20)
 @click.option('--lookback', type=int, default=60)
-def main(with_plots, data_path, stop_coeff_initial, stop_coeff, target_coeff, terminal_num_periods, lookback):
+def main(with_plots, data_path, lb, stop_coeff_initial, stop_coeff, target_coeff, terminal_num_periods, lookback):
     run_dir = 'runs/trailstop_{}'.format(time.time_ns() // 1000)
     strategy_params = {
         'data_path': data_path,
+        'lb': lb,
         'stop_coeff_initial': stop_coeff_initial,
         'stop_coeff': stop_coeff,
         'target_coeff': target_coeff,
@@ -198,7 +200,7 @@ def main(with_plots, data_path, stop_coeff_initial, stop_coeff, target_coeff, te
     num_pos_trades = 0
     num_neg_trades = 0
 
-    for i, trade_stats in enumerate(trade_sampler(data, lookback=lookback)):
+    for i, trade_stats in enumerate(trade_sampler(data, lb=lb, lookback=lookback)):
         backtest_stats.append({
             'trade': i,
             'price_enter': trade_stats['price_enter'],
@@ -235,7 +237,6 @@ def main(with_plots, data_path, stop_coeff_initial, stop_coeff, target_coeff, te
     df_summary.to_csv(os.path.join(run_dir, 'summary.csv'), index=False, mode='w+')
     df_backtest_stats = pd.DataFrame(backtest_stats)
     df_backtest_stats.to_csv(os.path.join(run_dir, 'trades.csv'), index=False, mode='w+')
-
     print('--- Finished backtest. Results saved in {} ---'.format(run_dir))
 
 
