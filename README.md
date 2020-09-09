@@ -24,6 +24,20 @@ pip install -r requirements.txt
 Make sure that your project interpreted points to the conda environment (e.g. *breakstrat*) you have created for this
 repository.
 
+## Todos
+
+- **Incorporate fees** into backtesting.
+- Add **additional evaluation metrics** (e.g. max drawdown, sharpe ratio).
+- Find and add **different types of data** e.g. Google trends, Twitter, Reddit, news (e.g. Cointelegraph, Coindesk).
+- Build a **pattern extraction** tool (e.g. like https://rickyhan.com/jekyll/update/2017/09/14/autoencoders.html). Certain price
+formations before a breakout are possibly predictive of a true breakout. A pattern extraction tool can help
+finding such (potentially) predictive patterns.
+- Investigate **time as a feature**. There might be a relationship between the time between breakouts and the likelihood 
+of a breakout being true. From experience it seems that if a breakout happens shortly after a breakout has already
+happened, it is more likely to be false, or less profitable.
+- Investigate **trend as a feature**. Is a (positive) breakout more likely to be true in an uptrend (e.g. when price is
+above the n-period moving average)?
+
 ## Strategies
 
 ### Baseline
@@ -153,6 +167,19 @@ breakouts that were false (i.e. unprofitable). The blue histogram corresponds to
 
 The results on `data/binance_spot_eth_usdt_5min` are similar. To view those results simply go into the
 `research/results/volume_eth_usdt_5min` directory.
+
+**Leveraging asset correlation**
+
+|     lb |   prob_true |   prob_true_common |   num_true_signals |   num_signals |   num_true_common_signals |   num_common_signals |
+|-------:|------------:|-------------------:|-------------------:|--------------:|--------------------------:|---------------------:|
+| 1      |    0.130985 |           0.150685 |                238 |          1817 |                        99 |                  657 |
+| 1.0025 |    0.133144 |           0.155624 |                235 |          1765 |                       101 |                  649 |
+| 1.005  |    0.133371 |           0.157321 |                233 |          1747 |                       101 |                  642 |
+| 1.01   |    0.13476  |           0.157566 |                233 |          1729 |                       101 |                  641 |
+
+
+![](research/results/crosscorr_eth_usdt_1min/plot.png)
+
 
 ### Profitability of a true breakout
 
