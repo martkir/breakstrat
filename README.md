@@ -28,6 +28,7 @@ repository.
 
 - **Incorporate fees** into backtesting.
 - Add **additional evaluation metrics** (e.g. max drawdown, sharpe ratio).
+- **Improve the figures** e.g. add labels and/ or usuful annotations.
 - Find and add **different types of data** e.g. Google trends, Twitter, Reddit, news (e.g. Cointelegraph, Coindesk).
 - Build a **pattern extraction** tool (e.g. like https://rickyhan.com/jekyll/update/2017/09/14/autoencoders.html). Certain price
 formations before a breakout are possibly predictive of a true breakout. A pattern extraction tool can help
@@ -37,6 +38,11 @@ of a breakout being true. From experience it seems that if a breakout happens sh
 happened, it is more likely to be false, or less profitable.
 - Investigate **trend as a feature**. Is a (positive) breakout more likely to be true in an uptrend (e.g. when price is
 above the n-period moving average)?
+- Investigate whether a breakout closer to a moving average cross is more likely to be true. The figure below shows
+an example (near the end of the moving average trend) of a price movement that our algorithm flags as a breakout that
+ended up false.
+
+![](assets/false_breakout.png)
 
 ## Strategies
 
