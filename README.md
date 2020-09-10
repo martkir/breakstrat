@@ -48,6 +48,26 @@ ended up false.
 
 ### Baseline
 
+**Description**
+
+The baseline strategy is based on a simple heuristic for identifying a breakout. The heuristic boils down to looking
+at recent prices over a fixed time window, and comparing those prices to the current price. The current price level is 
+classified as a breakout if the direction of change is positive and also significantly different from the price 
+movements observed in the recent past (in our chosen time window).
+
+For a precice definition of the heuristic used by the baseline strategy look at the `is_breakout` function in
+`strategies/baseline/backtest.py`.
+
+Once a breakout is detected the a **trade is entered**. Our current implementation assumes that a trade is entered (using a 
+market order) at the close price of the period in which the breakout was detected. (In the future we will assume a 
+limit order is placed at the level price needs to reach in order to be classified as a breakout.)
+A trade is entered using a limit order.
+
+There are three possible ways in which a **trade is exited**. We can either hit our **stop loss** or **target level**. 
+In the case that neither levels are hit we exit after a **fixed number of time** has passed since we entered. 
+The baseline sets a stop loss at a fixed percentage below the price the trade was entered at. Similarly, the take 
+profit is set at a fixed percentage above the entry price.
+
 ### Trailstop
 
 Trailstop is an extension of the baseline breakout strategy. The baseline strategy places a stop loss at a fixed level 
@@ -142,25 +162,24 @@ The results below are generating using the `python -m research.volume` command.
 
 *Table 1*
 
-| interval                 |   prob_true |   num_obs |
-|:-------------------------|------------:|----------:|
-| [33.46566, 335.43794]    |    0.491429 |       175 |
-| [335.70169, 490.34579]   |    0.48     |       175 |
-| [492.50678, 644.01946]   |    0.56     |       175 |
-| [647.25991, 844.23584]   |    0.537143 |       175 |
-| [844.36914, 1096.25991]  |    0.417143 |       175 |
-| [1097.14934, 1437.49539] |    0.434286 |       175 |
-| [1437.86022, 1907.82204] |    0.445714 |       175 |
-| [1918.86553, 2880.75598] |    0.534483 |       174 |
-| [2882.14951, 4722.58386] |    0.482759 |       174 |
-| [4790.58909, 31713.3321] |    0.505747 |       174 |
+|     lb | volume_interval                 |   prob_true |   num_obs |
+|-------:|:-------------------------|------------:|----------:|
+| 1      | [33.46566, 321.89743]    |  0.478022   |       182 |
+| 1      | [4603.93268, 31713.3321] |  0.508287   |       181 |
+| 1.0025 | [33.46566, 335.12007]    |  0.141243   |       177 |
+| 1.0025 | [4703.96199, 31713.3321] |  0.357955   |       176 |
+| 1.005  | [33.46566, 335.43794]    |  0.0285714  |       175 |
+| 1.005  | [4790.58909, 31713.3321] |  0.241379   |       174 |
+| 1.01   | [33.46566, 335.43794]    |  0.0115607  |       173 |
+| 1.01   | [4798.95866, 31713.3321] |  0.127907   |       172 |
 
 The above table looks at the probability of a true breakout at different levels of volume. E.g. the first row shows
 the (estimated) probability of a true breakout when the volume (at the time of breakout) is between is between 33.56566 
 and 335.43794. The *num_obs* column displays the number of observations that went into estimating the probability.
 
 *Figure 3*
-![](research/results/volume_eth_usdt_1min/prob_plot.png)
+![](research/results/batch_volume_spot_eth_usdt_1min/multi_prob_plot.png)
+
 
 This figure shows the same information as the above table. The values on the x-axis correspond to the row numbers of
 the table; the y-axis to the probability of a true breakout.
