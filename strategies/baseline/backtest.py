@@ -107,10 +107,7 @@ def get_cum_returns_buyhold(data):
     return cum_returns
 
 
-def trade_sampler(data, lb, lookback):
-    stop_coeff_initial = 0.99
-    target_coeff = 1.1
-    terminal_num_periods = 20
+def trade_sampler(data, stop_coeff_initial, target_coeff, terminal_num_periods, lb, lookback):
     i = lookback
 
     while True:
@@ -220,7 +217,8 @@ def main(with_plots, no_print, data_path, run_dir, lb, stop_coeff_initial, targe
     num_pos_trades = 0
     num_neg_trades = 0
 
-    for i, trade_stats in enumerate(trade_sampler(data, lb=lb, lookback=lookback)):
+    for i, trade_stats in enumerate(trade_sampler(data, stop_coeff_initial, target_coeff, terminal_num_periods, lb,
+                                                  lookback)):
         backtest_stats.append({
             'trade': i,
             'price_enter': trade_stats['price_enter'],
@@ -250,12 +248,15 @@ def main(with_plots, no_print, data_path, run_dir, lb, stop_coeff_initial, targe
 
     num_trades = num_pos_trades + num_neg_trades
     summary_stats = [{
+        'data_path': data_path,
+        'cum_return': cum_returns[-1]['return'],
         'num_trades': num_trades,
         'num_pos_trades': num_pos_trades,
         'num_neg_trades': num_neg_trades,
     }]
     df_summary = pd.DataFrame(summary_stats)
     df_summary.to_csv(os.path.join(run_dir, 'summary.csv'), index=False, mode='w+')
+    df_summary.to_markdown(open(os.path.join(run_dir, 'summary.md'), 'w+'), index=False)
     df_backtest_stats = pd.DataFrame(backtest_stats)
     df_backtest_stats.to_csv(os.path.join(run_dir, 'trades.csv'), index=False, mode='w+')
     print('--- Finished backtest. Results saved in {} ---'.format(run_dir))

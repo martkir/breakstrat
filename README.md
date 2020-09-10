@@ -68,6 +68,53 @@ In the case that neither levels are hit we exit after a **fixed number of time**
 The baseline sets a stop loss at a fixed percentage below the price the trade was entered at. Similarly, the take 
 profit is set at a fixed percentage above the entry price.
 
+**Results**
+
+The results below are produced by running the following command:
+
+```
+python -m strategies.baseline.backtest
+    --data_path=data/binance_spot_eth_usdt_1min.json
+    --lb=1.0
+    --stop_coeff_initial=0.985
+    --target_coeff=1.15
+    --terminal_num_periods=20
+    --lookback=60
+```
+
+- `lb` (short for *lowerbound*) determines how sensitive the breakout detection algorithm is. Higher values for `lb` 
+require the difference between the current price vs. past prices to be more significant.
+- `stop_coeff_initial` is the fraction to multiply the entry price by to get the stop loss level.
+- `target_coeff` is the fraction that determines the level at which to take profit. The level is based on the price
+that a trade is entered at.
+- `terminal_num_periods` is the maximum number of periods that a position is held for. If neither the target level nor 
+the stop level is hit a trade is exited when the terminal number of periods is reached.
+- `lookback` is used by the breakout detection algorithm. It determines the number of past periods required to establish
+whether a breakout has occurred.
+
+*Table 1*
+
+| data_path                            |   cum_return |   num_trades |   num_pos_trades |   num_neg_trades |
+|:-------------------------------------|-------------:|-------------:|-----------------:|-----------------:|
+| data/binance_spot_eth_usdt_1min.json |       2.2039 |         1802 |              886 |              916 |
+
+Running the baseline strategy with the above parameters gives a cumulative (gross) return of 2.2039 over the backtest
+period (from: 2020-03-01T06:00:00Z until: 2020-08-20T20:12:00Z) on the 1min ETHUSDT dataset.
+
+*Figure 1*
+
+![](runs/baseline_eth_usdt_1min/equity.png)
+
+Figure 1 shows the cumulative return of the baseline strategy over the backtest period and compares it to the
+performance of just buying and holding.
+
+*Figure 2*
+
+![](assets/baseline_example_plot.png)
+
+This is an example of a trade made by the baseline algorithm. The red line is the stop loss level. The number in
+magenta is the price the algorithm entered the trade at.
+
 ### Trailstop
 
 Trailstop is an extension of the baseline breakout strategy. The baseline strategy places a stop loss at a fixed level 
