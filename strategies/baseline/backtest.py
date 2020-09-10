@@ -78,9 +78,16 @@ def plot_trade(trade_cnt, run_dir, trade_stats):
         chart_neg.save()
 
 
-def plot_equity_curve(cum_returns, run_dir):
-    times = [i for i in range(len(cum_returns))]
-    plt.plot(times, cum_returns)
+def plot_equity_curve(cum_returns, cum_returns_buyhold, run_dir):
+    n = len(cum_returns)
+    m = len(cum_returns_buyhold)
+    times_strat = [cum_returns[i]['time'] for i in range(n)]
+    times_buyhold = [cum_returns_buyhold[i]['time'] for i in range(m)]
+    returns_strat = [cum_returns[i]['return'] for i in range(n)]
+    returns_buyhold = [cum_returns_buyhold[i]['return'] for i in range(m)]
+    plt.plot(times_strat, returns_strat, linewidth=0.5, color="blue", label="baseline")
+    plt.plot(times_buyhold, returns_buyhold, linewidth=0.5, color="magenta", label="buy & hold")
+    plt.legend()
     plt.savefig(os.path.join(run_dir, 'equity.png'))
 
 
@@ -90,6 +97,14 @@ def load_data(data_path):
     data = json.load(open(data_path, 'r'))
     print('--- Finished loading data at {} into memory ---'.format(data_path))
     return data
+
+
+def get_cum_returns_buyhold(data):
+    cum_returns = [{'time': 0, 'return': 1.0}]
+    for i in range(1, len(data)):
+        r = data[i]['price_close'] / data[i - 1]['price_close']
+        cum_returns.append({'time': i, 'return': r * cum_returns[-1]['return']})
+    return cum_returns
 
 
 def trade_sampler(data, lb, lookback):
@@ -199,6 +214,7 @@ def main(with_plots, no_print, data_path, run_dir, lb, stop_coeff_initial, targe
 
     backtest_stats = []
     data = load_data(data_path)
+
     cum_returns = []
     cum_return = 1
     num_pos_trades = 0
@@ -213,14 +229,14 @@ def main(with_plots, no_print, data_path, run_dir, lb, stop_coeff_initial, targe
             'enter_period': trade_stats['signal_period'],
             'exit_period': trade_stats['exit_period']
         })
+        cum_returns.append({'time': trade_stats['exit_period'], 'return': cum_return})
 
-        cum_returns.append(cum_return)
         gross_return = trade_stats['gross_return']
         hit_stop = trade_stats['hit_stop']
         cum_return *= gross_return
 
-        print('trade: {} \t return: {} \t cum_return: {} \t hit_stop: {}'.format(i, gross_return, cum_return, hit_stop))
-
+        print('trade: {} exit_period: {} \t return: {} \t cum_return: {} \t hit_stop: {}'
+              .format(i, trade_stats['exit_period'], gross_return, cum_return, hit_stop))
         if gross_return > 1.0:
             num_pos_trades += 1
         else:
@@ -229,7 +245,8 @@ def main(with_plots, no_print, data_path, run_dir, lb, stop_coeff_initial, targe
         if with_plots:
             plot_trade(i, run_dir, trade_stats)
 
-    plot_equity_curve(cum_returns, run_dir)
+    cum_returns_buyhold = get_cum_returns_buyhold(data)
+    plot_equity_curve(cum_returns, cum_returns_buyhold, run_dir)
 
     num_trades = num_pos_trades + num_neg_trades
     summary_stats = [{
