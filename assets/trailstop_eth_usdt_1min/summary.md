@@ -1,0 +1,3 @@
+| data_path                            |   cum_return |   avg_return_per_trade |   num_trades |   num_pos_trades |   num_neg_trades |
+|:-------------------------------------|-------------:|-----------------------:|-------------:|-----------------:|-----------------:|
+| data/binance_spot_eth_usdt_1min.json |      2.48227 |                1.00052 |         1817 |              889 |              928 |

@@ -1,0 +1,6 @@
+|     lb |   prob_true |   prob_true_common |   num_true_signals |   num_signals |   num_true_common_signals |   num_common_signals | data_path_target                     | data_path_aux                        |
+|-------:|------------:|-------------------:|-------------------:|--------------:|--------------------------:|---------------------:|:-------------------------------------|:-------------------------------------|
+| 1      |   0.488838  |          0.482866  |                854 |          1747 |                       310 |                  642 | data/binance_spot_eth_usdt_1min.json | data/binance_spot_btc_usdt_1min.json |
+| 1.0025 |   0.245564  |          0.271028  |                429 |          1747 |                       174 |                  642 | data/binance_spot_eth_usdt_1min.json | data/binance_spot_btc_usdt_1min.json |
+| 1.005  |   0.133371  |          0.157321  |                233 |          1747 |                       101 |                  642 | data/binance_spot_eth_usdt_1min.json | data/binance_spot_btc_usdt_1min.json |
+| 1.01   |   0.0520893 |          0.0778816 |                 91 |          1747 |                        50 |                  642 | data/binance_spot_eth_usdt_1min.json | data/binance_spot_btc_usdt_1min.json |

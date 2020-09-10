@@ -216,6 +216,7 @@ def main(with_plots, no_print, data_path, run_dir, lb, stop_coeff_initial, targe
     cum_return = 1
     num_pos_trades = 0
     num_neg_trades = 0
+    avg_return_per_trade = 0
 
     for i, trade_stats in enumerate(trade_sampler(data, stop_coeff_initial, target_coeff, terminal_num_periods, lb,
                                                   lookback)):
@@ -228,8 +229,8 @@ def main(with_plots, no_print, data_path, run_dir, lb, stop_coeff_initial, targe
             'exit_period': trade_stats['exit_period']
         })
         cum_returns.append({'time': trade_stats['exit_period'], 'return': cum_return})
-
         gross_return = trade_stats['gross_return']
+        avg_return_per_trade += gross_return
         hit_stop = trade_stats['hit_stop']
         cum_return *= gross_return
 
@@ -247,9 +248,11 @@ def main(with_plots, no_print, data_path, run_dir, lb, stop_coeff_initial, targe
     plot_equity_curve(cum_returns, cum_returns_buyhold, run_dir)
 
     num_trades = num_pos_trades + num_neg_trades
+    avg_return_per_trade = avg_return_per_trade / num_trades
     summary_stats = [{
         'data_path': data_path,
         'cum_return': cum_returns[-1]['return'],
+        'avg_return_per_trade': avg_return_per_trade,
         'num_trades': num_trades,
         'num_pos_trades': num_pos_trades,
         'num_neg_trades': num_neg_trades,

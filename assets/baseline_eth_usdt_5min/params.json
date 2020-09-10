@@ -1,0 +1,7 @@
+{
+    "data_path": "data/binance_spot_eth_usdt_5min.json",
+    "lb": 1.0,
+    "stop_coeff_initial": 0.985,
+    "target_coeff": 1.15,
+    "terminal_num_periods": 20
+}

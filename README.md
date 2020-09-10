@@ -70,17 +70,20 @@ profit is set at a fixed percentage above the entry price.
 
 **Results**
 
-The results below are produced by running the following command:
+The commands to produce the results below has the form:
 
 ```
 python -m strategies.baseline.backtest
-    --data_path=data/binance_spot_eth_usdt_1min.json
+    --data_path=<data_path>
     --lb=1.0
     --stop_coeff_initial=0.985
     --target_coeff=1.15
     --terminal_num_periods=20
     --lookback=60
-```
+``` 
+
+Let `data_path = data/binance_spot_eth_usdt_1min.json` to produce the 1min ETHUSDT results, and 
+`data_path = data/binance_spot_eth_usdt_1min.json` to produce the 5min ETHUSDT results.
 
 - `lb` (short for *lowerbound*) determines how sensitive the breakout detection algorithm is. Higher values for `lb` 
 require the difference between the current price vs. past prices to be more significant.
@@ -92,36 +95,57 @@ the stop level is hit a trade is exited when the terminal number of periods is r
 - `lookback` is used by the breakout detection algorithm. It determines the number of past periods required to establish
 whether a breakout has occurred.
 
+The output of a backtest is saved in the directory specified by `--run_dir` (default `runs/trailstop_[timestamp]`).
+
 *Table 1*
 
-| data_path                            |   cum_return |   num_trades |   num_pos_trades |   num_neg_trades |
-|:-------------------------------------|-------------:|-------------:|-----------------:|-----------------:|
-| data/binance_spot_eth_usdt_1min.json |       2.2039 |         1802 |              886 |              916 |
+| data_path                            |   cum_return |   avg_return_per_trade |   num_trades |   num_pos_trades |   num_neg_trades |
+|:-------------------------------------|-------------:|-----------------------:|-------------:|-----------------:|-----------------:|
+| data/binance_spot_eth_usdt_1min.json |       2.2039 |                1.00046 |         1802 |              886 |              916 |
+| data/binance_spot_eth_usdt_5min.json |      1.72312 |                1.00162 |          357 |              163 |              194 |
 
 Running the baseline strategy with the above parameters gives a cumulative (gross) return of 2.2039 over the backtest
-period (from: 2020-03-01T06:00:00Z until: 2020-08-20T20:12:00Z) on the 1min ETHUSDT dataset.
+period (from: 2020-03-01T06:00:00Z until: 2020-08-20T20:12:00Z) on the 1min ETHUSDT dataset. On the 5min data the
+return was 1.7312. On both datasets the **average return per trade is not large enough** to break-even when fees are
+taken into account.
 
 *Figure 1*
 
-![](runs/baseline_eth_usdt_1min/equity.png)
+![](assets/baseline_eth_usdt_1min/equity.png)
 
-Figure 1 shows the cumulative return of the baseline strategy over the backtest period and compares it to the
-performance of just buying and holding.
+Figure 1 shows the cumulative return of the baseline strategy on the `data/binance_spot_eth_usdt_1min.json` dataset 
+over the backtest period and compares it to the performance of just buying and holding.
 
 *Figure 2*
 
 ![](assets/baseline_example_plot.png)
 
 This is an example of a trade made by the baseline algorithm. The red line is the stop loss level. The number in
-magenta is the price the algorithm entered the trade at.
+magenta is the price the algorithm entered the trade at. To produce this plot run the `strategies/baseline/backtest.py`
+module but with `--with_plots` flag included. E.g.
+
+```
+python -m strategies.baseline.backtest
+    --with_plots
+    --data_path=data/binance_spot_eth_usdt_5min.json
+    --lb=1.0
+    --stop_coeff_initial=0.985
+    --target_coeff=1.15
+    --terminal_num_periods=20
+    --lookback=60
+```
 
 ### Trailstop
+
+**Description**
 
 Trailstop is an extension of the baseline breakout strategy. The baseline strategy places a stop loss at a fixed level 
 below the price at which a trade is entered. Trailstop instead uses a *trailing stop loss* based on a fixed percentage
 below the most recent high.
 
-To run a backtest of Trailstop `cd` into the project directory, and run the following command:
+**Results**
+
+E.g. command used to produce backtest results:
 
 ```
 python -m strategies.trailstop.backtest
@@ -136,43 +160,25 @@ python -m strategies.trailstop.backtest
 - `stop_coeff_initial` is the fraction that determines the stop loss of the first period (after entry). `stop_coeff` is
 the fraction that determines the stop loss of subsequent periods. We found that setting an initial stop loss that is
 slightly lower performed better.
-- `target_coeff` is the fraction that determines the level at which to take profit. The level is based on the price
-that a trade is entered at.
-- `terminal_num_periods` is the maximum number of periods that a position is held for. If neither the target level nor 
-the stop level is hit a trade is exited when the terminal number of periods is reached.
-- `lookback` is used by the breakout detection algorithm. It determines the number of past periods required to establish
-whether a breakout has occurred.
+- All other parameters are the same as the baseline strategy.
 
-The output of a backtest is saved in directory of the form `runs/trailstop_[timestamp]`. The output includes the
-following:
+*Table 1*
 
-- `equity.png` is a plot of the cumulative return of the strategy over the backtest period (e.g. see figure 1). 
-- `params.json` contains the strategy parameters of the backtest.
-- `trades.csv` contains the performance of each trade (e.g. `gross_profit`).
-- `summary.csv` summary of the overall performance of the strategy.
+| data_path                            |   cum_return |   avg_return_per_trade |   num_trades |   num_pos_trades |   num_neg_trades |
+|:-------------------------------------|-------------:|-----------------------:|-------------:|-----------------:|-----------------:|
+| data/binance_spot_eth_usdt_1min.json |      2.48227 |                1.00052 |         1817 |              889 |              928 |
+| data/binance_spot_eth_usdt_5min.json |      2.38982 |                1.00245 |          363 |              175 |              188 |
+
 
 *Figure 1*
-![](runs/trailstop_1599403704228716/equity.png)
+![](assets/trailstop_eth_usdt_1min/equity.png)
 
-In order to improve a strategy it is important to visualize the decisions it makes. For this reason, we have also added
-the option for the backtest to produce a plot of every single trade. In order to generate the plots add the 
-``--with_plots`` flag e.g.
-
-```
-python -m strategies.trailstop.backtest
-    --with_plots
-    --data_path=data/binance_spot_eth_usdt_5min.json
-    --stop_coeff_initial=0.985
-    --stop_coeff=0.99
-    --target_coeff=1.15
-    --terminal_num_periods=20
-    --lookback=60
-```
-
-Example of the type of plot produced:
 
 *Figure 2*
-![](runs/trailstop_1599403704228716/plots/pos/0/plot.png)
+![](assets/trailstop_example_plot.png)
+
+This is an example of a trade that was made by the trailstop algorithm. The red line is the stop loss level. Like the 
+baseline strategy, in order to produce this plot make sure to run the backtest module with `--with_plots` included.
 
 ## Research
 
