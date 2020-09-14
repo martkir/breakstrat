@@ -344,7 +344,7 @@ is a 46.1% chance that this is indeed the case.
 - The results are for the training data. Performance on unseen data is yet to be determined.
 - The number of observations in each group is small; arguably not enough to be confident.
 
-####GBMSplit
+#### GBMSplit
 
 Our GBM method can be a bit crude in representing a return series. The problem, especially for longer series, is that
 the underlying process that generates returns tends to change after a certain period of time. In this case, using a
