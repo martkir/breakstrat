@@ -180,11 +180,11 @@ slightly lower performed better.
 This is an example of a trade that was made by the trailstop algorithm. The red line is the stop loss level. Like the 
 baseline strategy, in order to produce this plot make sure to run the backtest module with `--with_plots` included.
 
-## Research
+# Research
 
-### Probability of a true breakout
+## Probability of a true breakout
 
-**Baseline probability**
+### Baseline probability
 
 | run_dir                         | data_path                            |   num_trades |   num_pos_trades |   num_neg_trades |   prob_true |
 |:--------------------------------|:-------------------------------------|-------------:|-----------------:|-----------------:|------------:|
@@ -205,7 +205,7 @@ trades that intuitively we wouldn't want to classify as being true breakouts (se
 current working definition does still provide a rough idea of the probability of a true breakout. More importantly,
 **the definition is likely good enough to test whether certain features are predictive for a true breakout**.
 
-**Volume as a feature**
+### Volume as a feature
 
 In this section we investigate whether volume correlates with the probability of a breakout. *I.e. are certain values of
 volume more likely to correspond to a true breakout than others?* The belief that we test is that a breakout on larger
@@ -246,7 +246,7 @@ breakouts that were false (i.e. unprofitable). The blue histogram corresponds to
 The results on `data/binance_spot_eth_usdt_5min` are similar. To view those results simply go into the
 `research/results/volume_eth_usdt_5min` directory.
 
-**Leveraging asset correlation**
+### Leveraging asset correlation
 
 |     lb |   prob_true |   prob_true_common |   num_true_signals |   num_signals |   num_true_common_signals |   num_common_signals |
 |-------:|------------:|-------------------:|-------------------:|--------------:|--------------------------:|---------------------:|
@@ -259,10 +259,123 @@ The results on `data/binance_spot_eth_usdt_5min` are similar. To view those resu
 ![](research/results/crosscorr_eth_usdt_1min/plot.png)
 
 
-### Profitability of a true breakout
+### Learning from embeddings
 
-**Baseline profitability**
+In this section we are interested in answering the questions: **Is it possible to predict a true breakout using past
+returns?** If we had a large enough dataset i.e. were most possible returns series preceding a breakout are observed 
+(multiple times), then answering this question is relatively straightforward. To estimate the conditional 
+(on past returns) probability of a true breakout, one could simply use a nearest neighbor approach. The density
+(of data) in a neighborhood would be sufficient to get a reliable estimate.
+
+Besides the neareset neighbor approach, there are numerous other conditional probability models that can be used to 
+obtain an estimate. Regerdless of the method used, the reliability of our estimate relies heavily on the density of the 
+data surrounding the corresponding returns series.
+
+There are two main factors that affect the density of data: (1) The dimensionality of our returns series, and (2) the 
+amount of data we have. In this section we will focus on the first issue: dimensionality. In particular, we will **focus
+on finding alternative lower dimensional representations** (i.e. embeddings) of returns. The **aim is to create 
+embeddings that are a good enough summary of the orginal returns series**, whilst having a much lower dimensionality, 
+therefore signficantly improving the density of our data.
+
+#### GBM
+
+The first approach we try out maps any series into a 2-dimensional representation. The rule is extremely simple. We
+just **look at the mean and standard deviation of the returns that make up a returns series**. The mean and standard deviation
+are sufficient statistics for estimating the parameters of a Geometric Brownian Motion (GBM). The GBM is a stochastic
+process that is a simple (but commonly used) model for financial time series 
+(see https://en.wikipedia.org/wiki/Geometric_Brownian_motion).
+
+Using the above idea we convert all return sequences to 2-dimensional feature vectors. We then **use a decision tree
+to segment this feature space into regions of different probability of (true) breakout**. Before fitting the decision
+tree the data is **down-sampled** to make the number of false breakouts equal to the number of true breakouts in the data.
+(The number of false breakouts overwhelms the number of true breakouts. Without down-sampling the decision tree is
+unable to segment the feature space. Every point in the feature space ends up being classified as a false breakout.)
+
+**Results**
+
+The results below are produced by running:
+
+```
+python -m research.embed
+    --symbol=binance_spot_eth_usdt_1min
+    --embedder_type=gbm
+    --max_depth=4
+    --min_samples_leaf=60
+    --lb_return=1.002
+``` 
+
+*Figure 1*
+
+![](assets/embed_binance_spot_eth_usdt_1min_gbm/regions_plot.png)
+
+The segmentation of the feature space learned by the decision tree (on down-sampled data). Blue dots correspond to
+true breakouts; red dots to false breakouts. The blue regions correspond to areas where the probability of a true
+breakout is higher than average.
+
+*Table 1*
+
+|   group |   prob_pos |   num_pos |   num_obs |   avg_return_per_trade |
+|--------:|-----------:|----------:|----------:|-----------------------:|
+|      11 |   0.358804 |       324 |       903 |                1.00115 |
+|      13 |   0.48951  |        70 |       143 |                **1.00224** |
+|       7 |   0.5      |        66 |       132 |                **1.00372** |
+|      14 |   0.382716 |        31 |        81 |                1.0026  |
+|      10 |   0.430233 |        37 |        86 |                1.00201 |
+|       3 |   0.203704 |        22 |       108 |                1.00033 |
+|       5 |   0.336066 |        41 |       122 |                1.00128 |
+|       4 |   0.168605 |        29 |       172 |                1.00009 |
+
+The decision tree segements the feature space into multiple regions (or groups). In the above table group 13 and 7 are
+notable. The reason is that the average return of a trade in those regions is larger than 1.002; as such, **are profitable
+in the long run**. 
+
+*Table 2*
+
+|   prob_true_given_pred_pos |   prob_neg_given_pred_neg |   prob_pos |   prob_neg |   num_obs |   num_pos |   num_neg |   num_pred_pos |   num_pred_neg |   num_true_pos_and_pred_pos |   num_true_neg_and_pred_neg |
+|---------------------------:|--------------------------:|-----------:|-----------:|----------:|----------:|----------:|---------------:|---------------:|----------------------------:|----------------------------:|
+|                   0.461538 |                  0.681226 |   0.354894 |   0.645106 |      1747 |       620 |      1127 |            442 |           1305 |                         204 |                         889 |
+
+This table shows the probability of a breakout conditional on the predictions made by the decision tree (used to 
+segment the feature space). E.g. If the decision tree predicts a returns series corresponds to a true breakout, there
+is a 46.1% chance that this is indeed the case.
+
+**Caveat(s)**:
+
+- The results are for the training data. Performance on unseen data is yet to be determined.
+- The number of observations in each group is small; arguably not enough to be confident.
+
+####GBMSplit
+
+Our GBM method can be a bit crude in representing a return series. The problem, especially for longer series, is that
+the underlying process that generates returns tends to change after a certain period of time. In this case, using a
+single GBM may not be expressive enough. To remedy this issue we try out a simple extension. We **split** our returns
+series into two pieces (down the middle). We then calculate the mean and standard deviation of each piece seperately.
+The mean and standard deviation of each piece are then combined (into a single vector) to create a 4-dimensional 
+representation of the original return series.
+
+Note: The decision to split the returns series down the middle is a crude heuristic. Ideally, the point to split at
+should be at a **change point**. (For a definition and examples of the term *change point* see 
+https://tinyurl.com/yxrp2n7k). Implementing a change point detection algorithm is a possible future extension of 
+*GBMSplit*.
+
+**Results**
+
+|   group |   prob_pos |   num_pos |   num_obs |   avg_return_per_trade |
+|--------:|-----------:|----------:|----------:|-----------------------:|
+|      17 |   0.361878 |       262 |       724 |                1.00097 |
+|      20 |   0.551402 |        59 |       107 |                1.00372 |
+|      19 |   0.403846 |        42 |       104 |                1.00147 |
+|      13 |   0.594595 |        44 |        74 |                1.00655 |
+|      10 |   0.308176 |        49 |       159 |                1.00091 |
+|      11 |   0.214286 |        18 |        84 |                1.00018 |
+|       4 |   0.227273 |        20 |        88 |                1.00027 |
+|       8 |   0.396552 |        46 |       116 |                1.0017  |
+|      16 |   0.442105 |        42 |        95 |                1.00205 |
+|       6 |   0.284211 |        27 |        95 |                1.00116 |
+|       5 |   0.108911 |        11 |       101 |                1.00013 |
 
 
-**Volume as a feature**
+|   prob_true_given_pred_pos |   prob_neg_given_pred_neg |   prob_pos |   prob_neg |   num_obs |   num_pos |   num_neg |   num_pred_pos |   num_pred_neg |   num_true_pos_and_pred_pos |   num_true_neg_and_pred_neg |
+|---------------------------:|--------------------------:|-----------:|-----------:|----------:|----------:|----------:|---------------:|---------------:|----------------------------:|----------------------------:|
+|                   0.405738 |                  0.762808 |   0.354894 |   0.645106 |      1747 |       620 |      1127 |           1220 |            527 |                         495 |                         402 |
 
