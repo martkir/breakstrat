@@ -11,16 +11,26 @@ import sys
 plt.rcParams["figure.figsize"] = (16, 8)
 
 
-def is_breakout(hits, lb):
+def is_breakout(hits, lb_breakout):
     prices = [hit['price_close'] for hit in hits]  # hits[0] is oldest.
     prices = np.array(prices)
     returns = prices[1:] / prices[:len(prices) - 1]
     max_abs_past_return = np.max(np.abs(returns[:len(returns) - 1] - 1))
     last_return = returns[-1] - 1
-    if last_return / max_abs_past_return > lb:
+    if last_return / max_abs_past_return > lb_breakout:
         return True
     else:
         return False
+
+
+def calc_price_enter(hits, lb):
+    prices = [hit['price_close'] for hit in hits]  # hits[0] is oldest.
+    prices = np.array(prices)
+    returns = prices[1:] / prices[:len(prices) - 1]
+    max_abs_past_return = np.max(np.abs(returns[:len(returns) - 1] - 1))  # -1 s.t. negative moves counted.
+    last_return = lb * max_abs_past_return + 1  # min return needed.
+    price_enter = prices[len(prices) - 2] * last_return
+    return price_enter
 
 
 class Chart(object):
@@ -70,7 +80,7 @@ def plot_trade(trade_cnt, run_dir, trade_stats):
     chart_neg_dir = os.path.join(run_dir, 'plots/neg')
     os.makedirs(chart_pos_dir, exist_ok=True)
     os.makedirs(chart_neg_dir, exist_ok=True)
-    if trade_stats['gross_return'] > 1.0:
+    if trade_stats['gross_return'] > 1.002:
         chart_pos = Chart(**chart_params, dirname=os.path.join(chart_pos_dir, '{}'.format(trade_cnt)))
         chart_pos.save()
     else:
@@ -108,6 +118,7 @@ def load_data(data_path):
 
 
 def trade_sampler(data, trade_params):
+    fee = 0.001
     lb = trade_params['lb']
     lookback = trade_params['lookback']
     stop_coeff_initial = trade_params['stop_coeff_initial']
@@ -123,24 +134,29 @@ def trade_sampler(data, trade_params):
 
         if is_breakout(segment, lb):
             stop_levels = [None] * len(segment)
-            candles = segment
-
-            price_enter = data[i]['price_close']
+            price_enter = calc_price_enter(segment, lb)  # data[i]['price_close']
             current_high = data[i]['price_high']
             stop_level = stop_coeff_initial * current_high
-
             target_level = target_coeff * price_enter
             hit_time_limit = False
             hit_stop = False
             time_since_entry = 1
             signal_period = i
             start_period = i - lookback
+
             i += 1
+            candles = []
+            for j in range(i - lookback, i + 1):
+                candle = data[j]
+                candle['period'] = j
+                candles.append(candle)
 
             while True:
                 if i > len(data) - 1:
                     break
 
+                candle = data[i]
+                candle['period'] = i
                 candles.append(data[i])
                 stop_levels.append(stop_level)
 
@@ -174,6 +190,7 @@ def trade_sampler(data, trade_params):
             output = {
                 'candles': candles,
                 'gross_return': gross_return,
+                'net_return': gross_return * (1 - fee) ** 2,
                 'hit_time_limit': hit_time_limit,
                 'hit_stop': hit_stop,
                 'price_enter': price_enter,
@@ -191,16 +208,17 @@ def trade_sampler(data, trade_params):
 
 @click.command()
 @click.option('--with_plots', is_flag=True)
+@click.option('--save_trades', is_flag=True)
 @click.option('--no_print', is_flag=True)
 @click.option('--data_path', type=str, default='data/binance_spot_eth_usdt_1min.json')
 @click.option('--run_dir', type=str, default=None)
-@click.option('--lb', type=float, default=1.0)
-@click.option('--stop_coeff_initial', type=float, default=0.985)
+@click.option('--lb', type=float, default=1.005)
+@click.option('--stop_coeff_initial', type=float, default=0.985)  # 0.985
 @click.option('--stop_coeff', type=float, default=0.99)
 @click.option('--target_coeff', type=float, default=1.15)
 @click.option('--terminal_num_periods', type=int, default=20)
 @click.option('--lookback', type=int, default=60)
-def main(with_plots, no_print, data_path, run_dir, lb, stop_coeff_initial, stop_coeff, target_coeff,
+def main(with_plots, save_trades, no_print, data_path, run_dir, lb, stop_coeff_initial, stop_coeff, target_coeff,
          terminal_num_periods, lookback):
 
     trade_params = {
@@ -220,6 +238,7 @@ def main(with_plots, no_print, data_path, run_dir, lb, stop_coeff_initial, stop_
     strategy_params = {
         'data_path': data_path,
         'lb': lb,
+        'lookback': lookback,
         'stop_coeff_initial': stop_coeff_initial,
         'stop_coeff': stop_coeff,
         'target_coeff': target_coeff,
@@ -236,20 +255,22 @@ def main(with_plots, no_print, data_path, run_dir, lb, stop_coeff_initial, stop_
     num_neg_trades = 0
     avg_return_per_trade = 0
 
-    for i, trade_stats in enumerate(trade_sampler(data, trade_params)):
+    trades = []
+    for i, trade in enumerate(trade_sampler(data, trade_params)):
+        trades.append(trade)
         backtest_stats.append({
             'trade': i,
-            'price_enter': trade_stats['price_enter'],
-            'price_exit': trade_stats['price_exit'],
-            'gross_return': trade_stats['gross_return'],
-            'enter_period': trade_stats['signal_period'],
-            'exit_period': trade_stats['exit_period']
+            'price_enter': trade['price_enter'],
+            'price_exit': trade['price_exit'],
+            'gross_return': trade['gross_return'],
+            'enter_period': trade['signal_period'],
+            'exit_period': trade['exit_period']
         })
 
-        cum_returns.append({'time': trade_stats['exit_period'], 'return': cum_return})
-        gross_return = trade_stats['gross_return']
+        cum_returns.append({'time': trade['exit_period'], 'return': cum_return})
+        gross_return = trade['gross_return']
         avg_return_per_trade += gross_return
-        hit_stop = trade_stats['hit_stop']
+        hit_stop = trade['hit_stop']
         cum_return *= gross_return
 
         print('trade: {} \t return: {} \t cum_return: {} \t hit_stop: {}'.format(i, gross_return, cum_return, hit_stop))
@@ -260,7 +281,10 @@ def main(with_plots, no_print, data_path, run_dir, lb, stop_coeff_initial, stop_
             num_neg_trades += 1
 
         if with_plots:
-            plot_trade(i, run_dir, trade_stats)
+            plot_trade(i, run_dir, trade)
+
+    if save_trades:
+        json.dump(trades, open(os.path.join(run_dir, 'trades.json'), 'w+'), indent=4)
 
     cum_returns_buyhold = get_cum_returns_buyhold(data)
     plot_equity_curve(cum_returns, cum_returns_buyhold, run_dir)
