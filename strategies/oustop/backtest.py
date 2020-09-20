@@ -4,10 +4,10 @@ import json
 import numpy as np
 import time
 import sys
-from strategies.utils import run_backtest
-from strategies.utils import is_breakout
-from strategies.utils import calc_price_enter
-from strategies.utils import save_backtest_results
+from strategies.common import run_backtest
+from strategies.common import is_breakout
+from strategies.common import calc_price_enter
+from strategies.common import save_backtest_results
 
 
 def ou_param_predict(t, s0, mu, sigma, theta):
