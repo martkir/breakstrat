@@ -2,14 +2,17 @@
 
 ## Table of contents
 
-1. [Getting started](#introduction)
+1. [Getting started](#getting_started)
 2. [Strategies](#strategies)
     1. [Baseline](#strategy_baseline)
-    2. [Trailstop](#strategy_trailstop)
-    3. [OUstop](#strategy_oustop)
+    2. [BaselineSDEV](#strategy_baseline_sdev)
+    3. [Trailstop](#strategy_trailstop)
+    4. [TrailstopSDEV](#strategy_trailstop_sdev)
+    5. [OUstop](#strategy_oustop)
+    6. [OUstopSDEV](#strategy_oustop)
 3. [Research](#research)
 
-## Getting started
+## Getting started <a name="getting_started"></a>
 
 To get started with running the code in this repository you need to install the dependencies listed in 
 `requirements.txt`. Doing this is simply a matter of running the following command:
@@ -33,27 +36,7 @@ pip install -r requirements.txt
 Make sure that your project interpreted points to the conda environment (e.g. *breakstrat*) you have created for this
 repository.
 
-## Todos
-
-- **Incorporate fees** into backtesting.
-- Add **additional evaluation metrics** (e.g. max drawdown, sharpe ratio).
-- **Improve the figures** e.g. add labels and/ or usuful annotations.
-- Find and add **different types of data** e.g. Google trends, Twitter, Reddit, news (e.g. Cointelegraph, Coindesk).
-- Build a **pattern extraction** tool (e.g. like https://rickyhan.com/jekyll/update/2017/09/14/autoencoders.html). Certain price
-formations before a breakout are possibly predictive of a true breakout. A pattern extraction tool can help
-finding such (potentially) predictive patterns.
-- Investigate **time as a feature**. There might be a relationship between the time between breakouts and the likelihood 
-of a breakout being true. From experience it seems that if a breakout happens shortly after a breakout has already
-happened, it is more likely to be false, or less profitable.
-- Investigate **trend as a feature**. Is a (positive) breakout more likely to be true in an uptrend (e.g. when price is
-above the n-period moving average)?
-- Investigate whether a breakout closer to a moving average cross is more likely to be true. The figure below shows
-an example (near the end of the moving average trend) of a price movement that our algorithm flags as a breakout that
-ended up false.
-
-![](assets/false_breakout.png)
-
-## Strategies
+## Strategies <a name="strategies"></a>
 
 ### Baseline <a name="strategy_baseline"></a>
 
@@ -144,7 +127,7 @@ python -m strategies.baseline.backtest
     --lookback=60
 ```
 
-### Trailstop
+### Trailstop <a name="strategy_trailstop"></a>
 
 **Description**
 
@@ -189,7 +172,66 @@ slightly lower performed better.
 This is an example of a trade that was made by the trailstop algorithm. The red line is the stop loss level. Like the 
 baseline strategy, in order to produce this plot make sure to run the backtest module with `--with_plots` included.
 
-# Research
+
+### TrailstopSDEV <a name="strategy_trailstop_sdev"></a>
+
+
+### OUStop <a name="strategy_oustop"></a>
+
+**Results**
+
+The command to run a backtest is:
+
+```python -m strategies.oustop.backtest```
+
+*Table 1: ETHUSDT 5min*
+
+| data_path                            |   cum_return |   avg_return_per_trade |   num_trades |   num_pos_trades |   num_neg_trades |
+|:-------------------------------------|-------------:|-----------------------:|-------------:|-----------------:|-----------------:|
+| data/binance_spot_eth_usdt_5min.json |      3.87865 |                1.00522 |          280 |              115 |              165 |
+
+To reproduce run the backtest command with the following parameters:
+
+```
+{
+    "lb_breakout": 1.005,
+    "alpha": 0.5,
+    "beta": 2.0,
+    "target_coeff": 4.6,
+    "terminal_num_periods": 100,
+    "lookback": 60,
+    "est_method": "max_abs_diff",
+    "est_sigma_lag": 100,
+    "theta": 2.0,
+    "pred_method": "start_at_peak",
+    "breakout_method": "abs",
+    "data_path": "data/binance_spot_eth_usdt_5min.json"
+}
+```
+
+*Figure 1*
+
+![](assets/oustop_example.png)
+
+The above figure shows an example of a successful trade made by *OUstop*.
+
+*Table 2: BTCUSDT 5min*
+
+| data_path                            |   cum_return |   avg_return_per_trade |   num_trades |   num_pos_trades |   num_neg_trades |
+|:-------------------------------------|-------------:|-----------------------:|-------------:|-----------------:|-----------------:|
+| data/binance_spot_btc_usdt_5min.json |      2.22937 |                1.00311 |          292 |              109 |              183 |
+
+The parameters used to produce the above table are the same as with ETHUSDT 5min. The only difference is the `data_path`
+parameter.
+
+### OUStopSDEV <a name="strategy_oustop_sdev"></a>
+
+| data_path                            |   cum_return |   avg_return_per_trade |   num_trades |   num_pos_trades |   num_neg_trades |
+|:-------------------------------------|-------------:|-----------------------:|-------------:|-----------------:|-----------------:|
+| data/binance_spot_eth_usdt_5min.json |      4.36392 |                1.00411 |          367 |              148 |              219 |
+
+
+# Research <a name="research"></a>
 
 ## Probability of a true breakout
 
