@@ -1,5 +1,14 @@
 # breakstrat
 
+## Table of contents
+
+1. [Getting started](#introduction)
+2. [Strategies](#strategies)
+    1. [Baseline](#strategy_baseline)
+    2. [Trailstop](#strategy_trailstop)
+    3. [OUstop](#strategy_oustop)
+3. [Research](#research)
+
 ## Getting started
 
 To get started with running the code in this repository you need to install the dependencies listed in 
@@ -46,7 +55,7 @@ ended up false.
 
 ## Strategies
 
-### Baseline
+### Baseline <a name="strategy_baseline"></a>
 
 **Description**
 
