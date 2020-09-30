@@ -5,11 +5,8 @@
 1. [Getting started](#getting_started)
 2. [Strategies](#strategies)
     1. [Baseline](#strategy_baseline)
-    2. [BaselineSDEV](#strategy_baseline_sdev)
     3. [Trailstop](#strategy_trailstop)
-    4. [TrailstopSDEV](#strategy_trailstop_sdev)
     5. [OUstop](#strategy_oustop)
-    6. [OUstopSDEV](#strategy_oustop)
 3. [Research](#research)
 
 ## Getting started <a name="getting_started"></a>
@@ -47,37 +44,40 @@ at recent prices over a fixed time window, and comparing those prices to the cur
 classified as a breakout if the direction of change is positive and also significantly different from the price 
 movements observed in the recent past (in our chosen time window).
 
-For a precice definition of the heuristic used by the baseline strategy look at the `is_breakout` function in
-`strategies/baseline/backtest.py`.
+There are two definitions for "significantly different" that we experiment with:
 
-Once a breakout is detected the a **trade is entered**. Our current implementation assumes that a trade is entered (using a 
-market order) at the close price of the period in which the breakout was detected. (In the future we will assume a 
-limit order is placed at the level price needs to reach in order to be classified as a breakout.)
-A trade is entered using a limit order.
+- **ABS**: Looks at the maximum absolute value of return over the given time window. If the last return divided by
+the maximum absolute value of return exceeds a predetermined threshold, then the current price level is considered a
+breakout.
+- **SDEV**: Looks at the standard deviation of log return over the given time window. If the last log return is a given
+number of standard deviations larger then the current price level is considered a breakout.
+
+For a more precice definition of the above look at the `is_breakout` function in the `strategies/common.py` module.
+
+Once a breakout is detected a **trade is entered**. A trade is entered using a buy **limit order**. The limit order
+is placed one period in advance, at the minimum level price needs to reach in the next period in order to be considered a
+breakout.
 
 There are three possible ways in which a **trade is exited**. We can either hit our **stop loss** or **target level**. 
 In the case that neither levels are hit we exit after a **fixed number of time** has passed since we entered. 
 The baseline sets a stop loss at a fixed percentage below the price the trade was entered at. Similarly, the take 
 profit is set at a fixed percentage above the entry price.
 
-**Results**
-
-The commands to produce the results below has the form:
+Example backtest command:
 
 ```
 python -m strategies.baseline.backtest
-    --data_path=<data_path>
-    --lb=1.0
+    --data_path=data/binance_spot_eth_usdt_1min.json
+    --breakout_method=sdev
+    --alpha=0.5
+    --beta=2.0
     --stop_coeff_initial=0.985
     --target_coeff=1.15
     --terminal_num_periods=20
     --lookback=60
 ``` 
 
-Let `data_path = data/binance_spot_eth_usdt_1min.json` to produce the 1min ETHUSDT results, and 
-`data_path = data/binance_spot_eth_usdt_1min.json` to produce the 5min ETHUSDT results.
-
-- `lb` (short for *lowerbound*) determines how sensitive the breakout detection algorithm is. Higher values for `lb` 
+- `lb_breakout` determines how sensitive the breakout detection algorithm is. Higher values for `lb_breakout` 
 require the difference between the current price vs. past prices to be more significant.
 - `stop_coeff_initial` is the fraction to multiply the entry price by to get the stop loss level.
 - `target_coeff` is the fraction that determines the level at which to take profit. The level is based on the price
@@ -89,24 +89,55 @@ whether a breakout has occurred.
 
 The output of a backtest is saved in the directory specified by `--run_dir` (default `runs/trailstop_[timestamp]`).
 
-*Table 1*
+**Results**
+
+The backtest period from 2020-03-01T06:00:00Z until 2020-08-20T20:12:00Z. In order for a strategy to be profitable 
+(after fees) the **average return per trade needs to exceed 1.002**. Our baseline strategy was able to achieve
+profitability on the 5min data for both ETHUSDT and BTCUSDT. On the 1min data the baseline strategy **failed to attain
+profitability**. Performance on ETHUSDT was better than on BTCUSDT.
+
+*ABS*
 
 | data_path                            |   cum_return |   avg_return_per_trade |   num_trades |   num_pos_trades |   num_neg_trades |
 |:-------------------------------------|-------------:|-----------------------:|-------------:|-----------------:|-----------------:|
-| data/binance_spot_eth_usdt_1min.json |       2.2039 |                1.00046 |         1802 |              886 |              916 |
-| data/binance_spot_eth_usdt_5min.json |      1.72312 |                1.00162 |          357 |              163 |              194 |
+| data/binance_spot_eth_usdt_1min.json |       9.4123 |                1.00127 |         1801 |              631 |             1170 |
+| data/binance_spot_eth_usdt_5min.json |      3.50452 |                1.00362 |          357 |              161 |              196 |
+| data/binance_spot_btc_usdt_1min.json |      4.30364 |                1.00086 |         1746 |              495 |             1251 |
+| data/binance_spot_btc_usdt_5min.json |      2.64223 |                 1.0028 |          359 |              164 |              195 |
 
-Running the baseline strategy with the above parameters gives a cumulative (gross) return of 2.2039 over the backtest
-period (from: 2020-03-01T06:00:00Z until: 2020-08-20T20:12:00Z) on the 1min ETHUSDT dataset. On the 5min data the
-return was 1.7312. On both datasets the **average return per trade is not large enough** to break-even when fees are
-taken into account.
+```
+python -m strategies.baseline.backtest --data_path=data/binance_spot_eth_usdt_1min.json --breakout_method=abs --lb_breakout=1.0 --stop_coeff_initial=0.985 --target_coeff=1.15 --terminal_num_periods=20 --lookback=60
+python -m strategies.baseline.backtest --data_path=data/binance_spot_eth_usdt_5min.json --breakout_method=abs --lb_breakout=1.0 --stop_coeff_initial=0.985 --target_coeff=1.15 --terminal_num_periods=20 --lookback=60
+python -m strategies.baseline.backtest --data_path=data/binance_spot_btc_usdt_1min.json --breakout_method=abs --lb_breakout=1.0 --stop_coeff_initial=0.985 --target_coeff=1.15 --terminal_num_periods=20 --lookback=60
+python -m strategies.baseline.backtest --data_path=data/binance_spot_btc_usdt_5min.json --breakout_method=abs --lb_breakout=1.0 --stop_coeff_initial=0.985 --target_coeff=1.15 --terminal_num_periods=20 --lookback=60
+``` 
+
+*SDEV*
+
+| data_path                            |   cum_return |   avg_return_per_trade |   num_trades |   num_pos_trades |   num_neg_trades |
+|:-------------------------------------|-------------:|-----------------------:|-------------:|-----------------:|-----------------:|
+| data/binance_spot_eth_usdt_1min.json |      7.56887 |                1.00117 |         1773 |              620 |             1153 |
+| data/binance_spot_eth_usdt_5min.json |      3.42524 |                 1.0036 |          353 |              160 |              193 |
+| data/binance_spot_btc_usdt_1min.json |      3.73697 |                1.00077 |         1743 |              494 |             1249 |
+| data/binance_spot_btc_usdt_5min.json |      2.67037 |                1.00288 |          353 |              162 |              191 |
+
+```
+python -m strategies.baseline.backtest --data_path=data/binance_spot_eth_usdt_1min.json --breakout_method=sdev --alpha=0.5 --beta=2.0 --lb_breakout=1.0 --stop_coeff_initial=0.985 --target_coeff=1.15 --terminal_num_periods=20 --lookback=60
+python -m strategies.baseline.backtest --data_path=data/binance_spot_eth_usdt_5min.json --breakout_method=sdev --alpha=0.5 --beta=2.0 --lb_breakout=1.0 --stop_coeff_initial=0.985 --target_coeff=1.15 --terminal_num_periods=20 --lookback=60
+python -m strategies.baseline.backtest --data_path=data/binance_spot_btc_usdt_1min.json --breakout_method=sdev --alpha=0.5 --beta=2.0 --lb_breakout=1.0 --stop_coeff_initial=0.985 --target_coeff=1.15 --terminal_num_periods=20 --lookback=60
+python -m strategies.baseline.backtest --data_path=data/binance_spot_btc_usdt_5min.json --breakout_method=sdev --alpha=0.5 --beta=2.0 --lb_breakout=1.0 --stop_coeff_initial=0.985 --target_coeff=1.15 --terminal_num_periods=20 --lookback=60
+```
 
 *Figure 1*
 
-![](assets/baseline_eth_usdt_1min/equity.png)
+![](assets/baseline_example_equity.png)
 
-Figure 1 shows the cumulative return of the baseline strategy on the `data/binance_spot_eth_usdt_1min.json` dataset 
-over the backtest period and compares it to the performance of just buying and holding.
+The output of a backtest contains a plot of the cumulative return of a strategy compared to buy and hold. Figure 1 
+shows the plot that is produced when running:
+
+```
+python -m strategies.baseline.backtest --data_path=data/binance_spot_eth_usdt_1min.json --breakout_method=sdev --alpha=0.5 --beta=2.0 --lb_breakout=1.0 --stop_coeff_initial=0.985 --target_coeff=1.15 --terminal_num_periods=20 --lookback=60
+```
 
 *Figure 2*
 
@@ -171,9 +202,6 @@ slightly lower performed better.
 
 This is an example of a trade that was made by the trailstop algorithm. The red line is the stop loss level. Like the 
 baseline strategy, in order to produce this plot make sure to run the backtest module with `--with_plots` included.
-
-
-### TrailstopSDEV <a name="strategy_trailstop_sdev"></a>
 
 
 ### OUStop <a name="strategy_oustop"></a>
